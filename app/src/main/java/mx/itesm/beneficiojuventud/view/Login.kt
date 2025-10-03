@@ -21,13 +21,34 @@ import mx.itesm.beneficiojuventud.components.MainButton
 import mx.itesm.beneficiojuventud.components.AltLoginButton
 import mx.itesm.beneficiojuventud.components.GradientDivider
 import mx.itesm.beneficiojuventud.components.PasswordTextField
+import mx.itesm.beneficiojuventud.viewmodel.AuthViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun Login(nav: NavHostController, modifier: Modifier = Modifier) {
+fun Login(nav: NavHostController, modifier: Modifier = Modifier, viewModel: AuthViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
+    val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(authState.isSuccess) {
+        if (authState.isSuccess) {
+            nav.navigate(Screens.Onboarding.route) {popUpTo(Screens.Login.route) { inclusive = true }}
+
+        }
+
+    }
+
+
+
+    // Mostrar errores
+    authState.error?.let { error ->
+        LaunchedEffect(error) {
+            // Aquí puedes mostrar un Snackbar o diálogo con el error
+            println("Error de autenticación: $error")
+        }
+    }
+
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -146,10 +167,11 @@ fun Login(nav: NavHostController, modifier: Modifier = Modifier) {
             // Botón primario (gradiente) — usa tu MainButton
             MainButton(
                 text = "Inicia Sesión",
+                enabled = !authState.isLoading && email.isNotEmpty() && password.isNotEmpty(),
                 modifier = Modifier
                     .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                // TODO: login con email/password
+                viewModel.signIn(email, password)
             }
 
             GradientDivider(
